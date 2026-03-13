@@ -1,0 +1,21 @@
+// ============================================================
+// OWNER CONFIGURATION — Update these values with your own!
+// ============================================================
+
+// Your Solana wallet address where platform fees are collected.
+// Every swap on SolSwap sends a % fee to this wallet.
+export const OWNER_WALLET = "YOUR_SOLANA_WALLET_ADDRESS_HERE";
+
+// Platform fee in basis points. 30 = 0.30% per swap.
+// Industry standard is 0.1% - 0.5%.
+// Example: A $1,000 swap at 30 bps = $3.00 fee to you.
+export const PLATFORM_FEE_BPS = 30;
+
+// Jupiter API endpoint
+export const JUPITER_API_URL = "https://quote-api.jup.ag/v6";
+
+// CoinGecko API (free tier - 30 calls/min)
+export const COINGECKO_API_URL = "https://api.coingecko.com/api/v3";
+
+// How often to refresh prices (in milliseconds)
+export const PRICE_REFRESH_INTERVAL = 30_000; // 30 seconds

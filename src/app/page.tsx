@@ -5,9 +5,12 @@ import Header from "@/components/Header";
 import SwapCard from "@/components/SwapCard";
 import PoolsTable from "@/components/PoolsTable";
 import Dashboard from "@/components/Dashboard";
+import OwnerDashboard from "@/components/OwnerDashboard";
+import { usePrices } from "@/hooks/usePrices";
 
 export default function Home() {
   const [activeTab, setActiveTab] = useState("swap");
+  const priceData = usePrices();
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -24,12 +27,13 @@ export default function Home() {
                 Fast, secure, and decentralized token swaps with the best rates
               </p>
             </div>
-            <SwapCard />
+            <SwapCard priceData={priceData} />
           </div>
         )}
 
         {activeTab === "pools" && <PoolsTable />}
-        {activeTab === "dashboard" && <Dashboard />}
+        {activeTab === "dashboard" && <Dashboard priceData={priceData} />}
+        {activeTab === "owner" && <OwnerDashboard />}
       </main>
 
       {/* Footer */}
@@ -39,10 +43,15 @@ export default function Home() {
             SolSwap - Decentralized Exchange on Solana
           </div>
           <div className="flex items-center gap-4 text-xs text-text-muted">
-            <span>Powered by Solana</span>
+            <span>Powered by Solana &amp; Jupiter</span>
+            {priceData.lastUpdated && (
+              <span className="text-text-muted">
+                Prices: {priceData.lastUpdated.toLocaleTimeString()}
+              </span>
+            )}
             <span className="flex items-center gap-1.5">
               <div className="w-1.5 h-1.5 rounded-full bg-green animate-pulse" />
-              Operational
+              Live
             </span>
           </div>
         </div>

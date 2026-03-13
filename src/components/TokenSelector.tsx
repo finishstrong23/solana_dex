@@ -9,9 +9,11 @@ interface TokenSelectorProps {
   onClose: () => void;
   onSelect: (token: Token) => void;
   excludeToken?: Token;
+  getPrice: (symbol: string) => number;
+  getChange: (symbol: string) => number;
 }
 
-export default function TokenSelector({ isOpen, onClose, onSelect, excludeToken }: TokenSelectorProps) {
+export default function TokenSelector({ isOpen, onClose, onSelect, excludeToken, getPrice, getChange }: TokenSelectorProps) {
   const [search, setSearch] = useState("");
 
   if (!isOpen) return null;
@@ -49,32 +51,36 @@ export default function TokenSelector({ isOpen, onClose, onSelect, excludeToken 
         </div>
 
         <div className="max-h-80 overflow-y-auto px-2 pb-4">
-          {filtered.map((token) => (
-            <button
-              key={token.symbol}
-              onClick={() => { onSelect(token); onClose(); setSearch(""); }}
-              className="w-full flex items-center gap-3 px-3 py-3 rounded-xl hover:bg-bg-card-hover transition-colors"
-            >
-              <img
-                src={token.logoURI}
-                alt={token.symbol}
-                className="w-8 h-8 rounded-full bg-bg-input"
-                onError={(e) => {
-                  (e.target as HTMLImageElement).src = `data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 40"><rect fill="%236366f1" width="40" height="40" rx="20"/><text x="50%" y="55%" text-anchor="middle" fill="white" font-size="14" font-family="sans-serif" dominant-baseline="middle">${token.symbol[0]}</text></svg>`;
-                }}
-              />
-              <div className="flex-1 text-left">
-                <div className="font-medium text-sm">{token.symbol}</div>
-                <div className="text-xs text-text-muted">{token.name}</div>
-              </div>
-              <div className="text-right">
-                <div className="text-sm font-medium">${formatPrice(token.price)}</div>
-                <div className={`text-xs ${token.change24h >= 0 ? "text-green" : "text-red"}`}>
-                  {token.change24h >= 0 ? "+" : ""}{token.change24h.toFixed(2)}%
+          {filtered.map((token) => {
+            const price = getPrice(token.symbol);
+            const change = getChange(token.symbol);
+            return (
+              <button
+                key={token.symbol}
+                onClick={() => { onSelect(token); onClose(); setSearch(""); }}
+                className="w-full flex items-center gap-3 px-3 py-3 rounded-xl hover:bg-bg-card-hover transition-colors"
+              >
+                <img
+                  src={token.logoURI}
+                  alt={token.symbol}
+                  className="w-8 h-8 rounded-full bg-bg-input"
+                  onError={(e) => {
+                    (e.target as HTMLImageElement).src = `data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 40"><rect fill="%236366f1" width="40" height="40" rx="20"/><text x="50%" y="55%" text-anchor="middle" fill="white" font-size="14" font-family="sans-serif" dominant-baseline="middle">${token.symbol[0]}</text></svg>`;
+                  }}
+                />
+                <div className="flex-1 text-left">
+                  <div className="font-medium text-sm">{token.symbol}</div>
+                  <div className="text-xs text-text-muted">{token.name}</div>
                 </div>
-              </div>
-            </button>
-          ))}
+                <div className="text-right">
+                  <div className="text-sm font-medium">${formatPrice(price)}</div>
+                  <div className={`text-xs ${change >= 0 ? "text-green" : "text-red"}`}>
+                    {change >= 0 ? "+" : ""}{change.toFixed(2)}%
+                  </div>
+                </div>
+              </button>
+            );
+          })}
         </div>
       </div>
     </div>

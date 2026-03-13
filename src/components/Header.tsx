@@ -3,7 +3,7 @@
 import React from "react";
 import { useWallet } from "@solana/wallet-adapter-react";
 import { WalletMultiButton } from "@solana/wallet-adapter-react-ui";
-import { ArrowLeftRight, Droplets, BarChart3 } from "lucide-react";
+import { ArrowLeftRight, Droplets, BarChart3, Shield } from "lucide-react";
 
 interface HeaderProps {
   activeTab: string;
@@ -14,6 +14,7 @@ const tabs = [
   { id: "swap", label: "Swap", icon: ArrowLeftRight },
   { id: "pools", label: "Pools", icon: Droplets },
   { id: "dashboard", label: "Dashboard", icon: BarChart3 },
+  { id: "owner", label: "Owner", icon: Shield },
 ];
 
 export default function Header({ activeTab, onTabChange }: HeaderProps) {
