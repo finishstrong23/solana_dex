@@ -4,7 +4,7 @@
 
 // Your Solana wallet address where platform fees are collected.
 // Every swap on SolSwap sends a % fee to this wallet.
-export const OWNER_WALLET = "YOUR_SOLANA_WALLET_ADDRESS_HERE";
+export const OWNER_WALLET = "7g1jNY6e9Vy9yHtYcbAF8uWtQmbntcdx8TivzaBbXEHA";
 
 // Platform fee in basis points. 30 = 0.30% per swap.
 // Industry standard is 0.1% - 0.5%.

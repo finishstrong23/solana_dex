@@ -4,11 +4,15 @@ import React, { useState, useCallback, useEffect } from "react";
 import { ArrowDownUp, Settings, Info, Loader2, ChevronDown, AlertTriangle } from "lucide-react";
 import { useWallet } from "@solana/wallet-adapter-react";
 import { useConnection } from "@solana/wallet-adapter-react";
-import { VersionedTransaction } from "@solana/web3.js";
+import { VersionedTransaction, PublicKey } from "@solana/web3.js";
+import { getAssociatedTokenAddressSync } from "@solana/spl-token";
 import { Token, TOKENS, formatPrice } from "@/data/tokens";
 import { PLATFORM_FEE_BPS, OWNER_WALLET } from "@/lib/config";
 import { getQuote, getSwapTransaction, type JupiterQuote } from "@/lib/jupiter";
+import { useBalances } from "@/hooks/useBalances";
 import TokenSelector from "./TokenSelector";
+
+const NATIVE_SOL_MINT = "So11111111111111111111111111111111111111112";
 
 interface SwapCardProps {
   priceData: {
@@ -21,6 +25,7 @@ interface SwapCardProps {
 export default function SwapCard({ priceData }: SwapCardProps) {
   const { connected, publicKey, signTransaction } = useWallet();
   const { connection } = useConnection();
+  const { getBalance, refetch: refetchBalances } = useBalances();
   const [tokenFrom, setTokenFrom] = useState<Token>(TOKENS[0]);
   const [tokenTo, setTokenTo] = useState<Token>(TOKENS[1]);
   const [amountFrom, setAmountFrom] = useState("");
@@ -36,6 +41,8 @@ export default function SwapCard({ priceData }: SwapCardProps) {
 
   const priceFrom = priceData.getPrice(tokenFrom.symbol);
   const priceTo = priceData.getPrice(tokenTo.symbol);
+  const balanceFrom = getBalance(tokenFrom.mint);
+  const balanceTo = getBalance(tokenTo.mint);
 
   // Compute output from Jupiter quote or fallback to price estimate
   const amountTo = quote
@@ -53,6 +60,8 @@ export default function SwapCard({ priceData }: SwapCardProps) {
   const platformFee = amountFrom
     ? (parseFloat(amountFrom) * priceFrom * (PLATFORM_FEE_BPS / 10000)).toFixed(2)
     : "0.00";
+
+  const insufficientBalance = amountFrom && parseFloat(amountFrom) > balanceFrom;
 
   // Fetch Jupiter quote when inputs change
   useEffect(() => {
@@ -98,6 +107,24 @@ export default function SwapCard({ priceData }: SwapCardProps) {
     setQuote(null);
   }, [tokenFrom, tokenTo, amountTo]);
 
+  const handleMax = useCallback(() => {
+    if (!connected) return;
+    const maxAmount = tokenFrom.mint === NATIVE_SOL_MINT
+      ? Math.max(0, balanceFrom - 0.01)
+      : balanceFrom;
+    setAmountFrom(maxAmount > 0 ? maxAmount.toString() : "");
+  }, [connected, balanceFrom, tokenFrom.mint]);
+
+  const getFeeAccount = useCallback((): string => {
+    const ownerPubkey = new PublicKey(OWNER_WALLET);
+    if (tokenTo.mint === NATIVE_SOL_MINT) {
+      return OWNER_WALLET;
+    }
+    const outputMint = new PublicKey(tokenTo.mint);
+    const ata = getAssociatedTokenAddressSync(outputMint, ownerPubkey, true);
+    return ata.toBase58();
+  }, [tokenTo.mint]);
+
   const handleSwap = async () => {
     if (!connected || !publicKey || !signTransaction || !quote) return;
 
@@ -105,36 +132,33 @@ export default function SwapCard({ priceData }: SwapCardProps) {
     setSwapStatus("Getting transaction...");
 
     try {
-      // Get the fee account — for now using owner wallet directly
-      // In production, this should be the owner's ATA for the output token
+      const feeAccount = getFeeAccount();
       const { swapTransaction } = await getSwapTransaction(
         quote,
         publicKey.toBase58(),
-        OWNER_WALLET
+        feeAccount
       );
 
       setSwapStatus("Please approve in wallet...");
 
-      // Deserialize and sign
       const txBuf = Buffer.from(swapTransaction, "base64");
       const tx = VersionedTransaction.deserialize(txBuf);
       const signed = await signTransaction(tx);
 
       setSwapStatus("Confirming transaction...");
 
-      // Send transaction
       const sig = await connection.sendRawTransaction(signed.serialize(), {
         skipPreflight: true,
         maxRetries: 2,
       });
 
-      // Wait for confirmation
       await connection.confirmTransaction(sig, "confirmed");
 
       setSwapStatus(`Swap successful!`);
       setAmountFrom("");
       setQuote(null);
 
+      setTimeout(() => refetchBalances(), 2000);
       setTimeout(() => setSwapStatus(null), 4000);
     } catch (err: unknown) {
       console.error("Swap error:", err);
@@ -148,6 +172,14 @@ export default function SwapCard({ priceData }: SwapCardProps) {
     } finally {
       setIsSwapping(false);
     }
+  };
+
+  const formatBal = (bal: number): string => {
+    if (bal === 0) return "0";
+    if (bal < 0.001) return bal.toFixed(6);
+    if (bal < 1) return bal.toFixed(4);
+    if (bal < 1000) return bal.toFixed(2);
+    return bal.toLocaleString(undefined, { maximumFractionDigits: 2 });
   };
 
   return (
@@ -207,7 +239,17 @@ export default function SwapCard({ priceData }: SwapCardProps) {
           <div className="bg-bg-input rounded-xl p-4 border border-border focus-within:border-border-focus transition-colors">
             <div className="flex items-center justify-between mb-2">
               <span className="text-xs text-text-muted">You Pay</span>
-              <span className="text-xs text-text-muted">Balance: 0.00</span>
+              <span className="text-xs text-text-muted">
+                Balance: {connected ? formatBal(balanceFrom) : "—"}
+                {connected && balanceFrom > 0 && (
+                  <button
+                    onClick={handleMax}
+                    className="ml-1.5 text-accent font-semibold hover:text-accent-hover transition-colors"
+                  >
+                    MAX
+                  </button>
+                )}
+              </span>
             </div>
             <div className="flex items-center gap-3">
               <input
@@ -248,7 +290,9 @@ export default function SwapCard({ priceData }: SwapCardProps) {
           <div className="bg-bg-input rounded-xl p-4 border border-border">
             <div className="flex items-center justify-between mb-2">
               <span className="text-xs text-text-muted">You Receive</span>
-              <span className="text-xs text-text-muted">Balance: 0.00</span>
+              <span className="text-xs text-text-muted">
+                Balance: {connected ? formatBal(balanceTo) : "—"}
+              </span>
             </div>
             <div className="flex items-center gap-3">
               <div className="flex-1">
@@ -283,6 +327,14 @@ export default function SwapCard({ priceData }: SwapCardProps) {
               </div>
             )}
           </div>
+
+          {/* Insufficient balance warning */}
+          {insufficientBalance && connected && (
+            <div className="mt-3 p-2 rounded-lg bg-red/10 border border-red/20 flex items-center gap-2 text-xs text-red">
+              <AlertTriangle className="w-3 h-3 shrink-0" />
+              Insufficient {tokenFrom.symbol} balance
+            </div>
+          )}
 
           {/* Quote error */}
           {quoteError && (
@@ -342,12 +394,14 @@ export default function SwapCard({ priceData }: SwapCardProps) {
           {/* Swap button */}
           <button
             onClick={connected ? handleSwap : undefined}
-            disabled={isSwapping || isQuoting || (!amountFrom && connected) || (connected && !quote)}
+            disabled={isSwapping || isQuoting || (!amountFrom && connected) || (connected && !quote) || !!insufficientBalance}
             className={`w-full mt-4 py-4 rounded-xl font-semibold text-white transition-all duration-200 ${
               !connected
                 ? "swap-button-gradient opacity-80 cursor-default"
                 : isSwapping
                 ? "swap-button-gradient opacity-70 cursor-wait"
+                : insufficientBalance
+                ? "bg-red/20 text-red cursor-not-allowed"
                 : amountFrom && quote
                 ? "swap-button-gradient hover:opacity-90 active:scale-[0.98]"
                 : "bg-bg-card-hover text-text-muted cursor-not-allowed"
@@ -363,6 +417,8 @@ export default function SwapCard({ priceData }: SwapCardProps) {
               <span className="flex items-center justify-center gap-2">
                 <Loader2 className="w-4 h-4 animate-spin" /> Getting quote...
               </span>
+            ) : insufficientBalance ? (
+              `Insufficient ${tokenFrom.symbol} balance`
             ) : amountFrom && quote ? (
               "Swap"
             ) : amountFrom && quoteError ? (

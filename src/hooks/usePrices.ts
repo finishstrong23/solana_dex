@@ -15,11 +15,19 @@ const FALLBACK_PRICES: PriceMap = {
   SOL: { usd: 89.08, usd_24h_change: 0 },
   USDC: { usd: 1.0, usd_24h_change: 0 },
   USDT: { usd: 1.0, usd_24h_change: 0 },
+  JUP: { usd: 1.24, usd_24h_change: 0 },
   RAY: { usd: 2.87, usd_24h_change: 0 },
   BONK: { usd: 0.00002341, usd_24h_change: 0 },
-  JTO: { usd: 3.56, usd_24h_change: 0 },
   WIF: { usd: 1.92, usd_24h_change: 0 },
-  JUP: { usd: 1.24, usd_24h_change: 0 },
+  JTO: { usd: 3.56, usd_24h_change: 0 },
+  PYTH: { usd: 0.38, usd_24h_change: 0 },
+  ORCA: { usd: 4.12, usd_24h_change: 0 },
+  RENDER: { usd: 7.85, usd_24h_change: 0 },
+  HNT: { usd: 6.42, usd_24h_change: 0 },
+  W: { usd: 0.58, usd_24h_change: 0 },
+  POPCAT: { usd: 0.72, usd_24h_change: 0 },
+  MSOL: { usd: 95.20, usd_24h_change: 0 },
+  TNSR: { usd: 0.85, usd_24h_change: 0 },
 };
 
 export function usePrices() {
@@ -33,11 +41,10 @@ export function usePrices() {
       if (!res.ok) throw new Error("API error");
       const data: PriceMap = await res.json();
       if (Object.keys(data).length > 0) {
-        setPrices(data);
+        setPrices((prev) => ({ ...prev, ...data }));
         setLastUpdated(new Date());
       }
     } catch {
-      // Keep existing prices on error
       console.warn("Price fetch failed, using cached prices");
     } finally {
       setLoading(false);

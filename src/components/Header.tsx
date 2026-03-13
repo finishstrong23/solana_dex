@@ -3,22 +3,26 @@
 import React from "react";
 import { useWallet } from "@solana/wallet-adapter-react";
 import { WalletMultiButton } from "@solana/wallet-adapter-react-ui";
-import { ArrowLeftRight, Droplets, BarChart3, Shield } from "lucide-react";
+import { ArrowLeftRight, Droplets, BarChart3, Shield, Zap } from "lucide-react";
+import { OWNER_WALLET } from "@/lib/config";
 
 interface HeaderProps {
   activeTab: string;
   onTabChange: (tab: string) => void;
 }
 
-const tabs = [
-  { id: "swap", label: "Swap", icon: ArrowLeftRight },
-  { id: "pools", label: "Pools", icon: Droplets },
-  { id: "dashboard", label: "Dashboard", icon: BarChart3 },
-  { id: "owner", label: "Owner", icon: Shield },
-];
-
 export default function Header({ activeTab, onTabChange }: HeaderProps) {
-  const { connected } = useWallet();
+  const { connected, publicKey } = useWallet();
+
+  const isOwner = publicKey?.toBase58() === OWNER_WALLET;
+
+  const tabs = [
+    { id: "swap", label: "Swap", icon: ArrowLeftRight },
+    { id: "pools", label: "Pools", icon: Droplets },
+    { id: "dashboard", label: "Markets", icon: BarChart3 },
+    // Only show owner dashboard to the platform owner
+    ...(isOwner ? [{ id: "owner", label: "Revenue", icon: Shield }] : []),
+  ];
 
   return (
     <header className="border-b border-border sticky top-0 z-50 bg-bg-primary/80 backdrop-blur-xl">
@@ -27,9 +31,11 @@ export default function Header({ activeTab, onTabChange }: HeaderProps) {
           {/* Logo */}
           <div className="flex items-center gap-3">
             <div className="w-8 h-8 rounded-lg swap-button-gradient flex items-center justify-center">
-              <ArrowLeftRight className="w-4 h-4 text-white" />
+              <Zap className="w-4 h-4 text-white" />
             </div>
-            <h1 className="text-xl font-bold gradient-text">SolSwap</h1>
+            <div>
+              <h1 className="text-xl font-bold gradient-text leading-tight">SolSwap</h1>
+            </div>
           </div>
 
           {/* Navigation */}

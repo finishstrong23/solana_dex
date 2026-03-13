@@ -1,16 +1,5 @@
 import { COINGECKO_API_URL } from "./config";
-
-// Map our token symbols to CoinGecko IDs
-const COINGECKO_IDS: Record<string, string> = {
-  SOL: "solana",
-  USDC: "usd-coin",
-  USDT: "tether",
-  RAY: "raydium",
-  BONK: "bonk",
-  JTO: "jito-governance-token",
-  WIF: "dogwifcoin",
-  JUP: "jupiter-exchange-solana",
-};
+import { TOKENS } from "@/data/tokens";
 
 export interface PriceData {
   [symbol: string]: {
@@ -20,11 +9,17 @@ export interface PriceData {
 }
 
 export async function fetchLivePrices(): Promise<PriceData> {
-  const ids = Object.values(COINGECKO_IDS).join(",");
+  // Build ID map from token data
+  const symbolToGeckoId: Record<string, string> = {};
+  for (const token of TOKENS) {
+    symbolToGeckoId[token.symbol] = token.coingeckoId;
+  }
+
+  const ids = Object.values(symbolToGeckoId).join(",");
   const url = `${COINGECKO_API_URL}/simple/price?ids=${ids}&vs_currencies=usd&include_24hr_change=true`;
 
   const res = await fetch(url, {
-    next: { revalidate: 30 }, // ISR: refresh every 30s
+    next: { revalidate: 30 },
   });
 
   if (!res.ok) {
@@ -33,9 +28,8 @@ export async function fetchLivePrices(): Promise<PriceData> {
 
   const data = await res.json();
 
-  // Convert CoinGecko IDs back to our symbols
   const result: PriceData = {};
-  for (const [symbol, geckoId] of Object.entries(COINGECKO_IDS)) {
+  for (const [symbol, geckoId] of Object.entries(symbolToGeckoId)) {
     if (data[geckoId]) {
       result[symbol] = {
         usd: data[geckoId].usd,
