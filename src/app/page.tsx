@@ -9,12 +9,12 @@ import PoolsTable from "@/components/PoolsTable";
 import Dashboard from "@/components/Dashboard";
 import OwnerDashboard from "@/components/OwnerDashboard";
 import SafetyScanner from "@/components/SafetyScanner";
+import AlertsPanel from "@/components/AlertsPanel";
 import StatusBar from "@/components/StatusBar";
 import { usePrices } from "@/hooks/usePrices";
 import { OWNER_WALLET } from "@/lib/config";
 import { TOKENS, type Token } from "@/data/tokens";
 import type { ScannerToken } from "@/types/scanner";
-import { Bell, Construction } from "lucide-react";
 
 export default function Home() {
   const [activeTab, setActiveTab] = useState("scanner");
@@ -108,17 +108,8 @@ export default function Home() {
           {activeTab === "dashboard" && <Dashboard priceData={priceData} />}
 
           {activeTab === "alerts" && (
-            <div className="flex flex-col items-center justify-center py-20">
-              <Bell className="w-12 h-12 text-text-muted mb-4" />
-              <h2 className="text-xl font-bold mb-2">Alerts Coming Soon</h2>
-              <p className="text-text-secondary text-sm text-center max-w-md">
-                Configurable alerts for risk score changes, whale activity, price targets,
-                and stop-loss triggers. Available in the next update.
-              </p>
-              <div className="mt-4 flex items-center gap-2 px-3 py-1.5 rounded-lg bg-accent/10 border border-accent/20">
-                <Construction className="w-3.5 h-3.5 text-accent" />
-                <span className="text-xs text-accent font-medium">In Development</span>
-              </div>
+            <div className="pt-6">
+              <AlertsPanel />
             </div>
           )}
 
