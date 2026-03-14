@@ -8,6 +8,7 @@ import ScannerTable from "@/components/Scanner/ScannerTable";
 import PoolsTable from "@/components/PoolsTable";
 import Dashboard from "@/components/Dashboard";
 import OwnerDashboard from "@/components/OwnerDashboard";
+import SafetyScanner from "@/components/SafetyScanner";
 import StatusBar from "@/components/StatusBar";
 import { usePrices } from "@/hooks/usePrices";
 import { OWNER_WALLET } from "@/lib/config";
@@ -94,6 +95,12 @@ export default function Home() {
                 externalTokenTo={externalTokenTo}
                 onExternalTokenConsumed={handleExternalTokenConsumed}
               />
+            </div>
+          )}
+
+          {activeTab === "safety" && (
+            <div className="pt-6">
+              <SafetyScanner />
             </div>
           )}
 
