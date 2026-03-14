@@ -1,22 +1,35 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useCallback } from "react";
 import { useWallet } from "@solana/wallet-adapter-react";
 import Header from "@/components/Header";
 import SwapCard from "@/components/SwapCard";
+import TrendingFeed from "@/components/TrendingFeed";
 import PoolsTable from "@/components/PoolsTable";
 import Dashboard from "@/components/Dashboard";
 import OwnerDashboard from "@/components/OwnerDashboard";
 import { usePrices } from "@/hooks/usePrices";
 import { OWNER_WALLET } from "@/lib/config";
+import { TOKENS, type Token } from "@/data/tokens";
 import { Shield, Zap, Globe, Lock } from "lucide-react";
 
 export default function Home() {
   const [activeTab, setActiveTab] = useState("swap");
   const priceData = usePrices();
   const { publicKey } = useWallet();
+  const [externalTokenTo, setExternalTokenTo] = useState<Token | null>(null);
 
   const isOwner = publicKey?.toBase58() === OWNER_WALLET;
+
+  const handleTrendingSelect = useCallback((token: Token) => {
+    // Find the token in our TOKENS list, or use the trending token directly
+    const existing = TOKENS.find((t) => t.mint === token.mint);
+    setExternalTokenTo(existing ?? token);
+  }, []);
+
+  const handleExternalTokenConsumed = useCallback(() => {
+    setExternalTokenTo(null);
+  }, []);
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -25,6 +38,7 @@ export default function Home() {
       <main className="flex-1 py-8 px-4 sm:px-6 lg:px-8">
         {activeTab === "swap" && (
           <div className="flex flex-col items-center">
+            {/* Hero */}
             <div className="text-center mb-8">
               <h2 className="text-3xl sm:text-4xl font-bold mb-2">
                 Trade any token on <span className="gradient-text">Solana</span>
@@ -53,7 +67,26 @@ export default function Home() {
                 </div>
               </div>
             </div>
-            <SwapCard priceData={priceData} />
+
+            {/* Swap + Trending two-column layout */}
+            <div className="w-full max-w-[920px] flex flex-col lg:flex-row items-start justify-center gap-6">
+              {/* Swap card */}
+              <div className="w-full lg:w-auto lg:flex-shrink-0">
+                <SwapCard
+                  priceData={priceData}
+                  externalTokenTo={externalTokenTo}
+                  onExternalTokenConsumed={handleExternalTokenConsumed}
+                />
+              </div>
+
+              {/* Trending feed */}
+              <div className="w-full lg:w-auto lg:flex-shrink-0">
+                <TrendingFeed
+                  onSelectToken={handleTrendingSelect}
+                  priceData={priceData}
+                />
+              </div>
+            </div>
           </div>
         )}
 

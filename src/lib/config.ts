@@ -6,10 +6,10 @@
 // Every swap on SolSwap sends a % fee to this wallet.
 export const OWNER_WALLET = "7g1jNY6e9Vy9yHtYcbAF8uWtQmbntcdx8TivzaBbXEHA";
 
-// Platform fee in basis points. 30 = 0.30% per swap.
-// Industry standard is 0.1% - 0.5%.
-// Example: A $1,000 swap at 30 bps = $3.00 fee to you.
-export const PLATFORM_FEE_BPS = 30;
+// Platform fee in basis points. 10 = 0.10% per swap.
+// Lower than competitors to attract volume.
+// Example: A $1,000 swap at 10 bps = $1.00 fee to you.
+export const PLATFORM_FEE_BPS = 10;
 
 // Jupiter API endpoint
 export const JUPITER_API_URL = "https://quote-api.jup.ag/v6";

@@ -20,9 +20,11 @@ interface SwapCardProps {
     getChange: (symbol: string) => number;
     loading: boolean;
   };
+  externalTokenTo?: Token | null;
+  onExternalTokenConsumed?: () => void;
 }
 
-export default function SwapCard({ priceData }: SwapCardProps) {
+export default function SwapCard({ priceData, externalTokenTo, onExternalTokenConsumed }: SwapCardProps) {
   const { connected, publicKey, signTransaction } = useWallet();
   const { connection } = useConnection();
   const { getBalance, refetch: refetchBalances } = useBalances();
@@ -62,6 +64,19 @@ export default function SwapCard({ priceData }: SwapCardProps) {
     : "0.00";
 
   const insufficientBalance = amountFrom && parseFloat(amountFrom) > balanceFrom;
+
+  // Handle external token selection (from trending feed)
+  useEffect(() => {
+    if (externalTokenTo && externalTokenTo.mint !== tokenTo.mint) {
+      // If the selected token is the same as tokenFrom, flip them
+      if (externalTokenTo.mint === tokenFrom.mint) {
+        setTokenFrom(tokenTo);
+      }
+      setTokenTo(externalTokenTo);
+      setQuote(null);
+      onExternalTokenConsumed?.();
+    }
+  }, [externalTokenTo]);
 
   // Fetch Jupiter quote when inputs change
   useEffect(() => {
