@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useCallback } from "react";
+import React, { useState, useCallback, useRef } from "react";
 import { useWallet } from "@solana/wallet-adapter-react";
 import Header from "@/components/Header";
 import SwapCard from "@/components/SwapCard";
@@ -8,7 +8,7 @@ import ScannerTable from "@/components/Scanner/ScannerTable";
 import PoolsTable from "@/components/PoolsTable";
 import Dashboard from "@/components/Dashboard";
 import OwnerDashboard from "@/components/OwnerDashboard";
-import SafetyScanner from "@/components/SafetyScanner";
+import SafetyScanner, { type SafetyScannerRef } from "@/components/SafetyScanner";
 import AlertsPanel from "@/components/AlertsPanel";
 import StatusBar from "@/components/StatusBar";
 import { usePrices } from "@/hooks/usePrices";
@@ -22,6 +22,7 @@ export default function Home() {
   const { publicKey, connected } = useWallet();
   const [externalTokenTo, setExternalTokenTo] = useState<Token | null>(null);
   const [showSwapPanel, setShowSwapPanel] = useState(true);
+  const safetyScannerRef = useRef<SafetyScannerRef>(null);
 
   const isOwner = publicKey?.toBase58() === OWNER_WALLET;
   const solPrice = priceData.getPrice("SOL");
@@ -49,12 +50,17 @@ export default function Home() {
     setExternalTokenTo(null);
   }, []);
 
+  const handleSafetyScan = useCallback((mint: string) => {
+    setActiveTab("safety");
+    setTimeout(() => safetyScannerRef.current?.scanMint(mint), 100);
+  }, []);
+
   // Scanner + Swap panel layout (the main view)
   const renderScannerLayout = () => (
     <div className="flex gap-4 h-full">
       {/* Scanner — main content area */}
       <div className="flex-1 min-w-0">
-        <ScannerTable onTradeToken={handleTradeFromScanner} />
+        <ScannerTable onTradeToken={handleTradeFromScanner} onSafetyScan={handleSafetyScan} />
       </div>
 
       {/* Persistent swap panel — right side on desktop */}
@@ -100,7 +106,7 @@ export default function Home() {
 
           {activeTab === "safety" && (
             <div className="pt-6">
-              <SafetyScanner />
+              <SafetyScanner ref={safetyScannerRef} />
             </div>
           )}
 

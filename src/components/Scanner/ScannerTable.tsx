@@ -9,10 +9,12 @@ import { useScanner } from "@/hooks/useScanner";
 import ScoreBadge from "@/components/shared/ScoreBadge";
 import Sparkline from "@/components/shared/Sparkline";
 import ScannerFilters from "./ScannerFilters";
+import TokenDetail from "./TokenDetail";
 import { formatPrice } from "@/data/tokens";
 
 interface ScannerTableProps {
   onTradeToken: (token: ScannerToken) => void;
+  onSafetyScan?: (mint: string) => void;
 }
 
 type SortKey = "momentum" | "rugRisk" | "volume24h" | "priceChange24h" | "liquidity" | "holders" | "price" | "marketCap";
@@ -40,7 +42,7 @@ function applyFilters(tokens: ScannerToken[], filters: Filters): ScannerToken[] 
   });
 }
 
-export default function ScannerTable({ onTradeToken }: ScannerTableProps) {
+export default function ScannerTable({ onTradeToken, onSafetyScan }: ScannerTableProps) {
   const { tokens: apiTokens, total, loading, loadingMore, hasMore, error, search, setSearch, loadMore, refetch } = useScanner({ limit: 100 });
 
   const [filters, setFilters] = useState<Filters>(DEFAULT_FILTERS);
@@ -49,6 +51,7 @@ export default function ScannerTable({ onTradeToken }: ScannerTableProps) {
   const [sortAsc, setSortAsc] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
   const [searchInput, setSearchInput] = useState("");
+  const [selectedToken, setSelectedToken] = useState<ScannerToken | null>(null);
 
   const handlePreset = (preset: ScannerPreset) => {
     if (activePreset === preset) {
@@ -250,7 +253,7 @@ export default function ScannerTable({ onTradeToken }: ScannerTableProps) {
           {!loading && !error && sortedTokens.length > 0 && (
             <div>
               {sortedTokens.map((token) => (
-                <TokenRow key={token.mint} token={token} onTrade={() => onTradeToken(token)} />
+                <TokenRow key={token.mint} token={token} onTrade={() => onTradeToken(token)} onClick={() => setSelectedToken(token)} />
               ))}
             </div>
           )}
@@ -286,15 +289,25 @@ export default function ScannerTable({ onTradeToken }: ScannerTableProps) {
           </span>
         </div>
       </div>
+
+      {/* Token Detail Modal */}
+      {selectedToken && (
+        <TokenDetail
+          token={selectedToken}
+          onClose={() => setSelectedToken(null)}
+          onTrade={(t) => { setSelectedToken(null); onTradeToken(t); }}
+          onSafetyScan={(mint) => { setSelectedToken(null); onSafetyScan?.(mint); }}
+        />
+      )}
     </div>
   );
 }
 
-function TokenRow({ token, onTrade }: { token: ScannerToken; onTrade: () => void }) {
+function TokenRow({ token, onTrade, onClick }: { token: ScannerToken; onTrade: () => void; onClick: () => void }) {
   const isPositive24h = token.priceChange24h >= 0;
 
   return (
-    <div className="scanner-row grid grid-cols-[1fr_85px_75px_80px_80px_90px_60px_60px_44px] gap-2 px-4 py-2.5 border-b border-border/50 items-center">
+    <div onClick={onClick} className="scanner-row grid grid-cols-[1fr_85px_75px_80px_80px_90px_60px_60px_44px] gap-2 px-4 py-2.5 border-b border-border/50 items-center cursor-pointer">
       {/* Token */}
       <div className="flex items-center gap-2.5 min-w-0">
         <img

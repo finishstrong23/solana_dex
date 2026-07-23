@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useCallback } from "react";
+import React, { useState, useCallback, forwardRef, useImperativeHandle } from "react";
 import {
   Shield,
   ShieldCheck,
@@ -20,6 +20,10 @@ import {
 } from "lucide-react";
 import { useSafetyScanner } from "@/hooks/useSafetyScanner";
 import type { SafetyCheck, TopHolder } from "@/types/safety";
+
+export interface SafetyScannerRef {
+  scanMint: (mint: string) => void;
+}
 
 // Well-known tokens for quick scan
 const QUICK_SCAN_TOKENS = [
@@ -95,10 +99,17 @@ function HolderRow({ holder, index }: { holder: TopHolder; index: number }) {
   );
 }
 
-export default function SafetyScanner() {
+const SafetyScanner = forwardRef<SafetyScannerRef>(function SafetyScanner(_props, ref) {
   const [input, setInput] = useState("");
   const [showHolders, setShowHolders] = useState(false);
   const { result, loading, error, cached, scan, reset } = useSafetyScanner();
+
+  useImperativeHandle(ref, () => ({
+    scanMint: (mint: string) => {
+      setInput(mint);
+      scan(mint);
+    },
+  }), [scan]);
 
   const handleScan = useCallback(() => {
     const mint = input.trim();
@@ -370,7 +381,9 @@ export default function SafetyScanner() {
       )}
     </div>
   );
-}
+});
+
+export default SafetyScanner;
 
 function formatNumber(n: number): string {
   if (n >= 1e12) return `${(n / 1e12).toFixed(2)}T`;
